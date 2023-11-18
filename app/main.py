@@ -12,6 +12,7 @@ def match_pattern(subject: str, pattern: str) -> bool:
 def main() -> None:
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('pattern')
+    arg_parser.add_argument('-E')
 
     args = arg_parser.parse_args()
 
