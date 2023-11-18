@@ -1,12 +1,6 @@
+from app.regex import match_pattern
 import argparse
 import sys
-
-
-def match_pattern(subject: str, pattern: str) -> bool:
-    if len(pattern) == 1:
-        return pattern in subject
-    else:
-        raise RuntimeError(f"Unhandled pattern: {pattern}")
 
 
 def main() -> None:
@@ -15,10 +9,11 @@ def main() -> None:
 
     args, _ = arg_parser.parse_known_args()
 
-    if match_pattern(sys.stdin.read().strip(), args.pattern):
-        exit(0)
-    else:
-        exit(1)
+    matching = match_pattern(args.pattern, sys.stdin.read())
+
+    print('Yep' if matching else 'Nope')
+
+    exit(0 if matching else 1)
 
 
 if __name__ == '__main__':
