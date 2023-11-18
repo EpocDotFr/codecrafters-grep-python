@@ -16,13 +16,11 @@ def main() -> None:
 
     args = arg_parser.parse_args()
 
-    match = match_pattern(sys.stdin.read().strip(), args.pattern)
-
-    if match:
+    if match_pattern(sys.stdin.read().strip(), args.pattern):
         exit(0)
     else:
         exit(1)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
