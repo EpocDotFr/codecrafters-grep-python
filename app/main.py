@@ -1,4 +1,4 @@
-from app.regex import match_pattern
+from app.matcher import match_pattern
 import argparse
 import sys
 
