@@ -42,21 +42,14 @@ def match_pattern(pattern: str, subject: str) -> bool:
 
             index += 1
         elif isinstance(item, CharacterGroup):
-            match = any([
-                c in subject for c in item.values
-            ])
+            char = subject[index]
+
+            match = char in item.values
 
             if item.mode == CharacterGroupMode.Positive and not match:
                 return False
             elif item.mode == CharacterGroupMode.Negative and match:
                 return False
-
-            # char = subject[index]
-            #
-            # if item.mode == CharacterGroupMode.Positive and char not in item.values:
-            #     return False
-            # elif item.mode == CharacterGroupMode.Negative and char in item.values:
-            #     return False
 
             index += 1
         elif isinstance(item, Wildcard):
