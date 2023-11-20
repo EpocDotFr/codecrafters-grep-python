@@ -66,14 +66,20 @@ def lex_pattern(pattern: str) -> Pattern:
             index += 2 if mode == CharacterGroupMode.Negative else 1
 
             values = ''
+            gend = False
 
-            for i in range(index, len(pattern) - 1):
+            for i in range(index, len(pattern)):
                 gchar = pattern[i]
 
                 if gchar == ']':
+                    gend = True
+
                     break
 
                 values += gchar
+
+            if not gend:
+                raise InvalidPattern('Encountered EOF while parsing character group')
 
             items.append(
                 CharacterGroup(mode=mode, values=values)
@@ -84,14 +90,20 @@ def lex_pattern(pattern: str) -> Pattern:
             index += 1
 
             value = ''
+            aend = False
 
-            for i in range(index, len(pattern) - 1):
+            for i in range(index, len(pattern)):
                 achar = pattern[i]
 
                 if achar == ')':
+                    aend = True
+
                     break
 
                 value += achar
+
+            if not aend:
+                raise InvalidPattern('Encountered EOF while parsing character group')
 
             items.append(
                 Alternation(choices=value.split('|'))
