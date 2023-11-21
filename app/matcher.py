@@ -75,12 +75,12 @@ def match_pattern(pattern: str, subject: str) -> bool:
     index = 0
 
     if not lexed_pattern.start:
-        item = lexed_pattern.items.pop(0)
+        first_item = lexed_pattern.items.pop(0)
 
         first_match = False
 
         for i in range(0, len(subject)):
-            match, index = _match_item(item, i, subject)
+            match, index = _match_item(first_item, i, subject)
 
             if match:
                 first_match = True
@@ -90,6 +90,11 @@ def match_pattern(pattern: str, subject: str) -> bool:
         if not first_match:
             return False
 
+    last_item = None
+
+    if lexed_pattern.end:
+        last_item = lexed_pattern.items.pop(-1)
+
     for item in lexed_pattern.items:
         if index > len(subject) - 1:
             return False
@@ -97,6 +102,12 @@ def match_pattern(pattern: str, subject: str) -> bool:
         match, index = _match_item(item, index, subject)
 
         if not match:
+            return False
+
+    if last_item:
+        match, index = _match_item(last_item, index, subject)
+
+        if not match or index != len(subject) - 1:
             return False
 
     return True
