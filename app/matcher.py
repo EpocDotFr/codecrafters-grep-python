@@ -31,8 +31,11 @@ def _count(subject: str, index: int, item: Union[Literal, Digit, Alphanumeric, W
         else:
             index += count
     elif item.count == Count.ZeroOrOne:
-        if target(subject[index]):
-            index += 1
+        try:
+            if target(subject[index]):
+                index += 1
+        except IndexError:
+            pass
 
     return match, index
 
@@ -108,9 +111,6 @@ def match_pattern(pattern: str, subject: str) -> bool:
         last_item = lexed_pattern.items.pop(-1)
 
     for item in lexed_pattern.items:
-        if index > len(subject) - 1:
-            return False
-
         match, index = _match_item(item, index, subject)
 
         if not match:
