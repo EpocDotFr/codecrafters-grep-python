@@ -97,4 +97,7 @@ def match_pattern(pattern: str, subject: str) -> bool:
         if not match:
             return False
 
+    if lexed_pattern.end and index < len(subject) - 1:
+        return False
+
     return True
