@@ -92,7 +92,7 @@ def match_pattern(pattern: str, subject: str) -> bool:
 
     for item in lexed_pattern.items:
         if index > len(subject) - 1:
-            break
+            return False
 
         match, index = _match_item(item, index, subject)
 
