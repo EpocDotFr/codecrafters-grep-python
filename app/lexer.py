@@ -99,13 +99,13 @@ def lex_pattern(pattern: str) -> Pattern:
         elif char == '(': # Alternation
             index += 1
 
-            value = _read_until(pattern, index, ')')
+            choices = _read_until(pattern, index, ')')
 
             items.append(
-                Alternation(choices=value.split('|'))
+                Alternation(choices=choices.split('|'))
             )
 
-            index += len(value)
+            index += len(choices)
         elif char == '.': # Wildcard
             count = _lex_count(pattern, index + 1)
 

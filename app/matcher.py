@@ -1,37 +1,60 @@
-from app.custom_types import CharacterGroupMode, Literal, Digit, Alphanumeric, CharacterGroup, Wildcard, Alternation
+from app.custom_types import Count, CharacterGroupMode, Literal, Digit, Alphanumeric, CharacterGroup, Wildcard, Alternation
+from typing import Tuple, Union, Callable
 from app.lexer import lex_pattern
-from typing import Tuple, Union
 import string
 
 METACLASS_DIGITS = string.digits
 METACLASS_UPPER_LOWER_LETTERS = string.ascii_letters
 METACLASS_DIGITS_UPPER_LOWER_LETTERS = METACLASS_DIGITS + METACLASS_UPPER_LOWER_LETTERS
+WILDCARD_CHARACTERS_EXCLUDE = '[](|)\\'
+
+
+def _count(subject: str, index: int, target: Callable) -> int:
+    count = 0
+
+    for i in range(index, len(subject)):
+        if not target(subject[i]):
+            break
+
+        count += 1
+
+    return count
+
+
+def _count_result(typ: Count, count: int, index: int) -> Tuple[bool, int]:
+    match = True
+
+    if typ == Count.One:
+        if count != 1:
+            match = False
+    elif typ == Count.OneOrMore:
+        if count < 1:
+            match = False
+    elif typ == Count.ZeroOrOne:
+        if count not in (0, 1):
+            match = False
+
+    if match:
+        index += count
+
+    return match, index
 
 
 def _match_item(item: Union[Literal, Digit, Alphanumeric, CharacterGroup, Wildcard, Alternation], index: int, subject: str) -> Tuple[bool, int]:
     match = True
 
     if isinstance(item, Literal):
-        char = subject[index]
+        count = _count(subject, index, lambda c: c == item.value)
 
-        if char != item.value:
-            match = False
-        else:
-            index += 1
+        match, index = _count_result(item.count, count, index)
     elif isinstance(item, Digit):
-        char = subject[index]
+        count = _count(subject, index, lambda c: c in METACLASS_DIGITS)
 
-        if char not in METACLASS_DIGITS:
-            match = False
-        else:
-            index += 1
+        match, index = _count_result(item.count, count, index)
     elif isinstance(item, Alphanumeric):
-        char = subject[index]
+        count = _count(subject, index, lambda c: c in METACLASS_DIGITS_UPPER_LOWER_LETTERS + '_')
 
-        if char not in METACLASS_DIGITS_UPPER_LOWER_LETTERS + '_':
-            match = False
-        else:
-            index += 1
+        match, index = _count_result(item.count, count, index)
     elif isinstance(item, CharacterGroup):
         char = subject[index]
 
@@ -42,9 +65,9 @@ def _match_item(item: Union[Literal, Digit, Alphanumeric, CharacterGroup, Wildca
         else:
             index += 1
     elif isinstance(item, Wildcard):
-        # TODO?
+        count = _count(subject, index, lambda c: c not in WILDCARD_CHARACTERS_EXCLUDE)
 
-        index += 1
+        match, index = _count_result(item.count, count, index)
     elif isinstance(item, Alternation):
         found = ''
 
