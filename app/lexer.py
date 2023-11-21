@@ -21,6 +21,33 @@ class InvalidPattern(Exception):
     pass
 
 
+def _lex_count(pattern: str, index: int) -> Count:
+    try:
+        return Count(pattern[index])
+    except (IndexError, ValueError):
+        return Count.One
+
+
+def _read_until(pattern: str, index: int, stop: str) -> str:
+    value = ''
+    end = False
+
+    for i in range(index, len(pattern)):
+        char = pattern[i]
+
+        if char == stop:
+            end = True
+
+            break
+
+        value += char
+
+    if not end:
+        raise InvalidPattern('Encountered EOF while parsing character group')
+
+    return value
+
+
 def lex_pattern(pattern: str) -> Pattern:
     if not pattern:
         raise InvalidPattern('pattern is empty')
@@ -46,10 +73,7 @@ def lex_pattern(pattern: str) -> Pattern:
             except IndexError:
                 raise InvalidPattern('Encountered EOF while parsing metaclass identifier') from None
 
-            try:
-                count = Count(pattern[index + 2])
-            except (IndexError, ValueError):
-                count = Count.One
+            count = _lex_count(pattern, index + 2)
 
             if metaclass == 'd': # Digit
                 items.append(Digit(count=count))
@@ -65,21 +89,7 @@ def lex_pattern(pattern: str) -> Pattern:
 
             index += 2 if mode == CharacterGroupMode.Negative else 1
 
-            values = ''
-            gend = False
-
-            for i in range(index, len(pattern)):
-                gchar = pattern[i]
-
-                if gchar == ']':
-                    gend = True
-
-                    break
-
-                values += gchar
-
-            if not gend:
-                raise InvalidPattern('Encountered EOF while parsing character group')
+            values = _read_until(pattern, index, ']')
 
             items.append(
                 CharacterGroup(mode=mode, values=values)
@@ -89,21 +99,7 @@ def lex_pattern(pattern: str) -> Pattern:
         elif char == '(': # Alternation
             index += 1
 
-            value = ''
-            aend = False
-
-            for i in range(index, len(pattern)):
-                achar = pattern[i]
-
-                if achar == ')':
-                    aend = True
-
-                    break
-
-                value += achar
-
-            if not aend:
-                raise InvalidPattern('Encountered EOF while parsing character group')
+            value = _read_until(pattern, index, ')')
 
             items.append(
                 Alternation(choices=value.split('|'))
@@ -111,20 +107,14 @@ def lex_pattern(pattern: str) -> Pattern:
 
             index += len(value)
         elif char == '.': # Wildcard
-            try:
-                count = Count(pattern[index + 1])
-            except (IndexError, ValueError):
-                count = Count.One
+            count = _lex_count(pattern, index + 1)
 
             items.append(Wildcard(count=count))
 
             if count != count.One:
                 index += 1
         else: # Literal character
-            try:
-                count = Count(pattern[index + 1])
-            except (IndexError, ValueError):
-                count = Count.One
+            count = _lex_count(pattern, index + 1)
 
             items.append(
                 Literal(value=char, count=count)

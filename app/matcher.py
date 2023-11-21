@@ -49,8 +49,7 @@ def _match_item(item: Union[Literal, Digit, Alphanumeric, CharacterGroup, Wildca
         found = ''
 
         for choice in item.choices:
-            length = len(choice)
-            chars = subject[index:index + length]
+            chars = subject[index:index + len(choice)]
 
             if chars == choice:
                 found = choice
