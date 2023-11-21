@@ -105,11 +105,12 @@ def match_pattern(pattern: str, subject: str) -> bool:
             return False
 
     if last_item:
+        if index > len(subject) - 1:
+            return False
+
         match, index = _match_item(last_item, index, subject)
 
-        print(match, index, len(subject) - 1)
-
-        if not match or index != len(subject) - 1:
+        if not match or index != len(subject):
             return False
 
     return True
