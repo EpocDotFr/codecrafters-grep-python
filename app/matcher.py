@@ -10,28 +10,29 @@ WILDCARD_CHARACTERS_EXCLUDE = '[](|)\\'
 
 
 def _count(subject: str, index: int, item: Union[Literal, Digit, Alphanumeric, Wildcard], target: Callable) -> Tuple[bool, int]:
-    match = False
-    count = 0
+    match = True
 
-    for i in range(index, len(subject)):
-        if target(subject[i]):
+    if item.count == Count.One:
+        if not target(subject[index]):
+            match = False
+        else:
+            index += 1
+    elif item.count == Count.OneOrMore:
+        count = 0
+
+        for i in range(index, len(subject)):
+            if not target(subject[i]):
+                break
+
             count += 1
 
-        if item.count == Count.One and count == 1:
-            match = True
-
-            break
-        elif item.count == Count.OneOrMore and count >= 1:
-            match = True
-
-            break
-        elif item.count == Count.ZeroOrOne and count in (0, 1):
-            match = True
-
-            break
-
-    if match:
-        index += count
+        if count < 1:
+            match = False
+        else:
+            index += count
+    elif item.count == Count.ZeroOrOne:
+        if target(subject[index]):
+            index += 1
 
     return match, index
 
