@@ -68,6 +68,8 @@ def match_pattern(pattern: str, subject: str) -> bool:
     if not subject:
         raise ValueError('subject is empty')
 
+    print(pattern, subject) # TODO REMOVE
+
     lexed_pattern = lex_pattern(pattern)
 
     print(lexed_pattern)
@@ -91,6 +93,8 @@ def match_pattern(pattern: str, subject: str) -> bool:
             return False
 
     for item in lexed_pattern.items:
+        print(index) # TODO REMOVE
+
         match, index = _match_item(item, index, subject)
 
         if not match:
