@@ -1,4 +1,4 @@
-from app.custom_types import Count, CharacterGroupMode, Literal, Digit, Alphanumeric, CharacterGroup, Wildcard, Alternation
+from app.custom_types import Count, CharacterSetMode, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup
 from typing import Tuple, Union, Callable
 from app.lexer import lex_pattern
 import string
@@ -40,7 +40,7 @@ def _count(subject: str, index: int, item: Union[Literal, Digit, Alphanumeric, W
     return match, index
 
 
-def _match_item(item: Union[Literal, Digit, Alphanumeric, CharacterGroup, Wildcard, Alternation], index: int, subject: str) -> Tuple[bool, int]:
+def _match_item(item: Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup], index: int, subject: str) -> Tuple[bool, int]:
     match = True
 
     if isinstance(item, Literal):
@@ -49,18 +49,18 @@ def _match_item(item: Union[Literal, Digit, Alphanumeric, CharacterGroup, Wildca
         match, index = _count(subject, index, item, lambda c: c in METACLASS_DIGITS)
     elif isinstance(item, Alphanumeric):
         match, index = _count(subject, index, item, lambda c: c in METACLASS_DIGITS_UPPER_LOWER_LETTERS + '_')
-    elif isinstance(item, CharacterGroup):
+    elif isinstance(item, CharacterSet):
         char = subject[index]
 
-        if item.mode == CharacterGroupMode.Positive and char not in item.values:
+        if item.mode == CharacterSetMode.Positive and char not in item.values:
             match = False
-        elif item.mode == CharacterGroupMode.Negative and char in item.values:
+        elif item.mode == CharacterSetMode.Negative and char in item.values:
             match = False
         else:
             index += 1
     elif isinstance(item, Wildcard):
         match, index = _count(subject, index, item, lambda c: c not in WILDCARD_CHARACTERS_EXCLUDE)
-    elif isinstance(item, Alternation):
+    elif isinstance(item, AlternationGroup):
         found = ''
 
         for choice in item.choices:

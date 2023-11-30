@@ -8,7 +8,7 @@ class Count(Enum):
     ZeroOrOne = '?'
 
 
-class CharacterGroupMode(Enum):
+class CharacterSetMode(Enum):
     Positive = None
     Negative = '^'
 
@@ -31,7 +31,7 @@ Alphanumeric = namedtuple('Alphanumeric', [
     'count'
 ])
 
-CharacterGroup = namedtuple('CharacterGroup', [
+CharacterSet = namedtuple('CharacterSet', [
     'mode',
     'values'
 ])
@@ -40,6 +40,10 @@ Wildcard = namedtuple('Wildcard', [
     'count'
 ])
 
-Alternation = namedtuple('Alternation', [
+AlternationGroup = namedtuple('AlternationGroup', [
     'choices'
+])
+
+GroupBackreference = namedtuple('GroupBackreference', [
+    'reference'
 ])

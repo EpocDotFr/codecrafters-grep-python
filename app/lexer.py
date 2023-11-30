@@ -1,12 +1,15 @@
-from app.custom_types import Count, CharacterGroupMode, Pattern, Literal, Digit, Alphanumeric, CharacterGroup, Wildcard, Alternation
+from app.custom_types import Count, CharacterSetMode, Pattern, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, GroupBackreference
+import string
 
 # Full Codecrafter pattern that must be handled:
 #
-# ^ a \d \w [abc] [^abc] a+ b? . (cat|dog) $
-# | | ^^ ^^ ^^^^^ ^^^^^^  |  | | ^^^^^^^^^ |
-# | |  |  |   |     |     |  | |     |     ∨
-# | |  |  |   |     |     |  | |     ∨     End of string anchor
-# | |  |  |   |     |     |  | ∨     Alternation
+# ^ a \d \w [abc] [^abc] a+ b? . (\w+) (cat|dog) \1 $
+# | | ^^ ^^ ^^^^^ ^^^^^^  |  | | ^^^^^ ^^^^^^^^^ ^^ |
+# | |  |  |   |     |     |  | |   |       |      | ∨
+# | |  |  |   |     |     |  | |   |       |      |  End of string anchor
+# | |  |  |   |     |     |  | |   |       ∨      Group backreference
+# | |  |  |   |     |     |  | |   ∨       Alternation group
+# | |  |  |   |     |     |  | ∨   Group
 # | |  |  |   |     |     |  ∨ Wildcard
 # | |  |  |   |     |     ∨  Zero or one
 # | |  |  |   |     ∨     One or more
@@ -79,33 +82,40 @@ def lex_pattern(pattern: str) -> Pattern:
                 items.append(Digit(count=count))
             elif metaclass == 'w': # Alphanumeric
                 items.append(Alphanumeric(count=count))
+            elif metaclass in string.digits: # Group backreference
+                items.append(GroupBackreference(reference=int(metaclass)))
+            else:
+                raise InvalidPattern(f'Unhandled or invalid metaclass "{metaclass}"')
 
             index += 1 if count == Count.One else 2
-        elif char == '[': # Positive or negative character group
+        elif char == '[': # Positive or negative character set
             try:
-                mode = CharacterGroupMode(pattern[index + 1])
+                mode = CharacterSetMode(pattern[index + 1])
             except (IndexError, ValueError):
-                mode = CharacterGroupMode.Positive
+                mode = CharacterSetMode.Positive
 
-            index += 2 if mode == CharacterGroupMode.Negative else 1
+            index += 2 if mode == CharacterSetMode.Negative else 1
 
             values = _read_until(pattern, index, ']')
 
             items.append(
-                CharacterGroup(mode=mode, values=values)
+                CharacterSet(mode=mode, values=values)
             )
 
             index += len(values)
-        elif char == '(': # Alternation
+        elif char == '(': # Group
             index += 1
 
-            choices = _read_until(pattern, index, ')')
+            content = _read_until(pattern, index, ')')
 
-            items.append(
-                Alternation(choices=choices.split('|'))
-            )
+            choices = content.split('|')
 
-            index += len(choices)
+            if len(choices) > 1: # Alternation
+                items.append(
+                    AlternationGroup(choices=choices)
+                )
+
+            index += len(content)
         elif char == '.': # Wildcard
             count = _lex_count(pattern, index + 1)
 
