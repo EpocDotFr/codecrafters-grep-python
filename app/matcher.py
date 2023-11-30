@@ -13,10 +13,13 @@ def _count(subject: str, index: int, item: Union[Literal, Digit, Alphanumeric, W
     match = True
 
     if item.count == Count.One:
-        if not target(subject[index]):
-            match = False
-        else:
-            index += 1
+        try:
+            if not target(subject[index]):
+                match = False
+            else:
+                index += 1
+        except IndexError:
+            pass
     elif item.count == Count.OneOrMore:
         count = 0
 

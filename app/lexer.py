@@ -3,18 +3,19 @@ import string
 
 # Full Codecrafter pattern that must be handled:
 #
-# ^ a \d \w [abc] [^abc] a+ b? . (\w+) (cat|dog) \1 $
-# | | ^^ ^^ ^^^^^ ^^^^^^  |  | | ^^^^^ ^^^^^^^^^ ^^ |
-# | |  |  |   |     |     |  | |   |       |      | ∨
-# | |  |  |   |     |     |  | |   |       |      |  End of string anchor
-# | |  |  |   |     |     |  | |   |       ∨      Group backreference
-# | |  |  |   |     |     |  | |   ∨       Alternation group
-# | |  |  |   |     |     |  | ∨   Group
-# | |  |  |   |     |     |  ∨ Wildcard
-# | |  |  |   |     |     ∨  Zero or one
-# | |  |  |   |     ∨     One or more
-# | |  |  |   ∨     Negative character group
-# | |  |  ∨   Positive character group
+# ^ a \d \w \\ [abc] [^abc] a+ b? . (\w+) (cat|dog) \1 $
+# | | ^^ ^^ ^^ ^^^^^ ^^^^^^  |  | | ^^^^^ ^^^^^^^^^ ^^ |
+# | |  |  |  |   |     |     |  | |   |       |      | ∨
+# | |  |  |  |   |     |     |  | |   |       |      |  End of string anchor
+# | |  |  |  |   |     |     |  | |   |       ∨      Group backreference
+# | |  |  |  |   |     |     |  | |   ∨       Alternation group
+# | |  |  |  |   |     |     |  | ∨   Group
+# | |  |  |  |   |     |     |  ∨ Wildcard
+# | |  |  |  |   |     |     ∨  Zero or one
+# | |  |  |  |   |     ∨     One or more
+# | |  |  |  |   ∨     Negative character group
+# | |  |  |  ∨   Positive character group
+# | |  |  ∨  Escaped backslash
 # | |  ∨  Alphanumeric
 # | ∨  Digit
 # ∨ Literal character
@@ -76,18 +77,21 @@ def lex_pattern(pattern: str) -> Pattern:
             except IndexError:
                 raise InvalidPattern('Encountered EOF while parsing metaclass identifier') from None
 
-            count = _lex_count(pattern, index + 2)
-
-            if metaclass == 'd': # Digit
-                items.append(Digit(count=count))
-            elif metaclass == 'w': # Alphanumeric
-                items.append(Alphanumeric(count=count))
-            elif metaclass in string.digits: # Group backreference
-                items.append(GroupBackreference(reference=int(metaclass)))
+            if metaclass == '\\':
+                pass # TODO
             else:
-                raise InvalidPattern(f'Unhandled or invalid metaclass "{metaclass}"')
+                count = _lex_count(pattern, index + 2)
 
-            index += 1 if count == Count.One else 2
+                if metaclass == 'd': # Digit
+                    items.append(Digit(count=count))
+                elif metaclass == 'w': # Alphanumeric
+                    items.append(Alphanumeric(count=count))
+                elif metaclass in string.digits: # Group backreference
+                    items.append(GroupBackreference(reference=int(metaclass)))
+                else:
+                    raise InvalidPattern(f'Unhandled or invalid metaclass "{metaclass}"')
+
+                index += 1 if count == Count.One else 2
         elif char == '[': # Positive or negative character set
             try:
                 mode = CharacterSetMode(pattern[index + 1])
