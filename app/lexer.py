@@ -1,6 +1,5 @@
 from app.custom_types import Count, CharacterSetMode, Pattern, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, GroupBackreference
 from io import BytesIO, SEEK_CUR
-from typing import Optional
 import string
 
 # Full Codecrafter pattern that must be handled:
@@ -33,11 +32,11 @@ class Lexer:
     def __init__(self, pattern: str):
         self.p = BytesIO(pattern.encode())
 
-    def read_count(self) -> Optional[Count]:
+    def read_count(self) -> Count:
         char = self.p.read(1)
 
         if not char:
-            return None
+            return Count.One
 
         try:
             return Count(char)
