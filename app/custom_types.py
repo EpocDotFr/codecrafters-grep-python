@@ -4,13 +4,13 @@ from enum import Enum
 
 class Count(Enum):
     One = None
-    OneOrMore = '+'
-    ZeroOrOne = '?'
+    OneOrMore = b'+'
+    ZeroOrOne = b'?'
 
 
 class CharacterSetMode(Enum):
     Positive = None
-    Negative = '^'
+    Negative = b'^'
 
 Pattern = namedtuple('Pattern', [
     'start',

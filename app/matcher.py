@@ -1,6 +1,6 @@
 from app.custom_types import Count, CharacterSetMode, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup
 from typing import Tuple, Union, Callable
-from app.lexer import lex_pattern
+from app.lexer import Lexer
 import string
 
 METACLASS_DIGITS = string.digits
@@ -86,7 +86,7 @@ def match_pattern(pattern: str, subject: str) -> bool:
     if not subject:
         raise ValueError('subject is empty')
 
-    lexed_pattern = lex_pattern(pattern)
+    lexed_pattern = Lexer(pattern).parse()
 
     print(lexed_pattern)
 

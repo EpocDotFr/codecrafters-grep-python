@@ -1,4 +1,6 @@
 from app.custom_types import Count, CharacterSetMode, Pattern, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, GroupBackreference
+from io import BytesIO, SEEK_CUR
+from typing import Optional
 import string
 
 # Full Codecrafter pattern that must be handled:
@@ -25,118 +27,127 @@ class InvalidPattern(Exception):
     pass
 
 
-def _lex_count(pattern: str, index: int) -> Count:
-    try:
-        return Count(pattern[index])
-    except (IndexError, ValueError):
-        return Count.One
+class Lexer:
+    p: BytesIO
 
+    def __init__(self, pattern: str):
+        self.p = BytesIO(pattern.encode())
 
-def _read_until(pattern: str, index: int, stop: str) -> str:
-    value = ''
-    end = False
+    def read_count(self) -> Optional[Count]:
+        char = self.p.read(1)
 
-    for i in range(index, len(pattern)):
-        char = pattern[i]
+        if not char:
+            return None
 
-        if char == stop:
-            end = True
+        try:
+            return Count(char)
+        except ValueError:
+            self.p.seek(-1, SEEK_CUR)
 
-            break
+            return Count.One
 
-        value += char
-
-    if not end:
-        raise InvalidPattern('Encountered EOF while parsing character group')
-
-    return value
-
-
-def lex_pattern(pattern: str) -> Pattern:
-    if not pattern:
-        raise InvalidPattern('pattern is empty')
-
-    start = pattern[0] == '^'
-
-    try:
-        end = pattern[-1] == '$'
-    except IndexError:
+    def read_until(self, stop: bytes) -> bytes:
+        value = b''
         end = False
 
-    pattern = pattern.strip('^$')
+        while True:
+            char = self.p.read(1)
 
-    items = []
-    index = 0
+            if not char:
+                break
 
-    while index <= len(pattern) - 1:
-        char = pattern[index]
+            if char == stop:
+                end = True
 
-        if char == '\\': # Metaclass
-            try:
-                metaclass = pattern[index + 1]
-            except IndexError:
-                raise InvalidPattern('Encountered EOF while parsing metaclass identifier') from None
+                break
 
-            if metaclass == '\\':
-                pass # TODO
-            else:
-                count = _lex_count(pattern, index + 2)
+            value += char
 
-                if metaclass == 'd': # Digit
-                    items.append(Digit(count=count))
-                elif metaclass == 'w': # Alphanumeric
-                    items.append(Alphanumeric(count=count))
-                elif metaclass in string.digits: # Group backreference
+        if not end:
+            raise InvalidPattern('Encountered EOF while parsing character group')
+
+        return value
+
+    def parse(self) -> Pattern:
+        start = end = False
+        items = []
+
+        while True:
+            char = self.p.read(1)
+
+            if not char:
+                break
+
+            if char == b'^': # Start of string anchor
+                start = True
+            elif char == b'\\': # Metaclass
+                metaclass = self.p.read(1)
+
+                if not metaclass:
+                    raise InvalidPattern('Encountered EOF while parsing metaclass identifier')
+
+                if metaclass in (b'd', b'w'):
+                    count = self.read_count()
+
+                    if count is None:
+                        break
+
+                    if metaclass == b'd': # Digit
+                        items.append(Digit(count=count))
+                    elif metaclass == b'w': # Alphanumeric
+                        items.append(Alphanumeric(count=count))
+                elif metaclass in string.digits.encode(): # Group backreference
                     items.append(GroupBackreference(reference=int(metaclass)))
-                else:
-                    raise InvalidPattern(f'Unhandled or invalid metaclass "{metaclass}"')
+                else: # Escaped backslash
+                    count = self.read_count()
 
-                index += 1 if count == Count.One else 2
-        elif char == '[': # Positive or negative character set
-            try:
-                mode = CharacterSetMode(pattern[index + 1])
-            except (IndexError, ValueError):
-                mode = CharacterSetMode.Positive
+                    if count is None:
+                        break
 
-            index += 2 if mode == CharacterSetMode.Negative else 1
+                    items.append(
+                        Literal(value='\\', count=count)
+                    )
+            elif char == b'[': # Positive or negative character set
+                try:
+                    mode = CharacterSetMode(self.p.read(1))
+                except ValueError:
+                    self.p.seek(-1, SEEK_CUR)
 
-            values = _read_until(pattern, index, ']')
+                    mode = CharacterSetMode.Positive
 
-            items.append(
-                CharacterSet(mode=mode, values=values)
-            )
+                values = self.read_until(b']')
 
-            index += len(values)
-        elif char == '(': # Group
-            index += 1
-
-            content = _read_until(pattern, index, ')')
-
-            choices = content.split('|')
-
-            if len(choices) > 1: # Alternation
                 items.append(
-                    AlternationGroup(choices=choices)
+                    CharacterSet(mode=mode, values=values.decode())
+                )
+            elif char == b'(': # Group
+                content = self.read_until(b')')
+
+                choices = content.split(b'|')
+
+                if len(choices) > 1: # Alternation
+                    items.append(
+                        AlternationGroup(choices=[choice.decode() for choice in choices])
+                    )
+                else:
+                    pass
+            elif char == b'.': # Wildcard
+                count = self.read_count()
+
+                if count is None:
+                    break
+
+                items.append(Wildcard(count=count))
+            elif char == b'$': # End of string anchor
+                end = True
+            else: # Literal character
+                count = self.read_count()
+
+                if count is None:
+                    break
+
+                items.append(
+                    Literal(value=char.decode(), count=count)
                 )
 
-            index += len(content)
-        elif char == '.': # Wildcard
-            count = _lex_count(pattern, index + 1)
-
-            items.append(Wildcard(count=count))
-
-            if count != count.One:
-                index += 1
-        else: # Literal character
-            count = _lex_count(pattern, index + 1)
-
-            items.append(
-                Literal(value=char, count=count)
-            )
-
-            if count != count.One:
-                index += 1
-
-        index += 1
-
-    return Pattern(start=start, items=items, end=end)
+        return Pattern(start=start, items=items, end=end)
