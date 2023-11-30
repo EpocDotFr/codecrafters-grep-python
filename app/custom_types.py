@@ -40,6 +40,10 @@ Wildcard = namedtuple('Wildcard', [
     'count'
 ])
 
+Group = namedtuple('Group', [
+    'items'
+])
+
 AlternationGroup = namedtuple('AlternationGroup', [
     'choices'
 ])
