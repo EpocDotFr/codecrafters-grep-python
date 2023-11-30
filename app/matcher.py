@@ -19,7 +19,7 @@ def _count(subject: str, index: int, item: Union[Literal, Digit, Alphanumeric, W
             else:
                 index += 1
         except IndexError:
-            pass
+            match = False
     elif item.count == Count.OneOrMore:
         count = 0
 
