@@ -1,6 +1,7 @@
-from app.custom_types import Count, CharacterSetMode, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup
+from app.custom_types import Count, CharacterSetMode, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Pattern
 from typing import Tuple, Union, Callable
 from app.lexer import Lexer
+from io import BytesIO
 import string
 
 METACLASS_DIGITS = string.digits
@@ -80,6 +81,18 @@ def _match_item(item: Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard
             index += len(found)
 
     return match, index
+
+
+class Matcher:
+    pattern: Pattern
+    subject: BytesIO
+
+    def __init__(self, pattern: str, subject: str):
+        self.pattern = Lexer(pattern).parse()
+        self.subject = BytesIO(subject.encode())
+
+    def match(self) -> bool:
+        return False
 
 
 def match_pattern(pattern: str, subject: str) -> bool:

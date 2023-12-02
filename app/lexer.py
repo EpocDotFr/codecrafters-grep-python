@@ -28,15 +28,15 @@ class InvalidPattern(Exception):
 
 
 class Lexer:
-    p: BytesIO
+    pattern: BytesIO
 
     def __init__(self, pattern: str):
-        self.p = BytesIO(pattern.encode())
+        self.pattern = BytesIO(pattern.encode())
 
-    def read_count(self, p: Optional[BytesIO] = None) -> Count:
-        p = p or self.p
+    def read_count(self, pattern: Optional[BytesIO] = None) -> Count:
+        pattern = pattern or self.pattern
 
-        char = p.read(1)
+        char = pattern.read(1)
 
         if not char:
             return Count.One
@@ -44,18 +44,18 @@ class Lexer:
         try:
             return Count(char)
         except ValueError:
-            p.seek(-1, SEEK_CUR)
+            pattern.seek(-1, SEEK_CUR)
 
             return Count.One
 
-    def read_until(self, stop: bytes, p: Optional[BytesIO] = None) -> bytes:
-        p = p or self.p
+    def read_until(self, stop: bytes, pattern: Optional[BytesIO] = None) -> bytes:
+        pattern = pattern or self.pattern
 
         value = b''
         end = False
 
         while True:
-            char = p.read(1)
+            char = pattern.read(1)
 
             if not char:
                 break
@@ -72,24 +72,24 @@ class Lexer:
 
         return value
 
-    def read_items(self, p: Optional[BytesIO] = None) -> List[Union[Digit, Alphanumeric, GroupBackreference, Literal, CharacterSet, Wildcard]]:
-        p = p or self.p
+    def read_items(self, pattern: Optional[BytesIO] = None) -> List[Union[Digit, Alphanumeric, GroupBackreference, Literal, CharacterSet, Wildcard]]:
+        pattern = pattern or self.pattern
 
         items = []
 
-        char = p.read(1)
+        char = pattern.read(1)
 
         if not char:
             return items
 
         if char == b'\\': # Metaclass
-            metaclass = p.read(1)
+            metaclass = pattern.read(1)
 
             if not metaclass:
                 raise InvalidPattern('Encountered EOF while parsing metaclass identifier')
 
             if metaclass in (b'd', b'w'):
-                count = self.read_count(p)
+                count = self.read_count(pattern)
 
                 if metaclass == b'd': # Digit
                     items.append(Digit(count=count))
@@ -98,30 +98,30 @@ class Lexer:
             elif metaclass in string.digits.encode(): # Group backreference
                 items.append(GroupBackreference(reference=int(metaclass)))
             else: # Escaped backslash
-                count = self.read_count(p)
+                count = self.read_count(pattern)
 
                 items.append(
                     Literal(value='\\', count=count)
                 )
         elif char == b'[': # Positive or negative character set
             try:
-                mode = CharacterSetMode(p.read(1))
+                mode = CharacterSetMode(pattern.read(1))
             except ValueError:
-                p.seek(-1, SEEK_CUR)
+                pattern.seek(-1, SEEK_CUR)
 
                 mode = CharacterSetMode.Positive
 
-            values = self.read_until(b']', p=p)
+            values = self.read_until(b']', pattern=pattern)
 
             items.append(
                 CharacterSet(mode=mode, values=values.decode())
             )
         elif char == b'.': # Wildcard
-            count = self.read_count(p)
+            count = self.read_count(pattern)
 
             items.append(Wildcard(count=count))
         else: # Literal character
-            count = self.read_count(p)
+            count = self.read_count(pattern)
 
             items.append(
                 Literal(value=char.decode(), count=count)
@@ -134,7 +134,7 @@ class Lexer:
         items = []
 
         while True:
-            char = self.p.read(1)
+            char = self.pattern.read(1)
 
             if not char:
                 break
@@ -157,7 +157,7 @@ class Lexer:
                         Group(items=self.read_items(BytesIO(content)))
                     )
             else:
-                self.p.seek(-1, SEEK_CUR)
+                self.pattern.seek(-1, SEEK_CUR)
 
                 items.extend(self.read_items())
 
