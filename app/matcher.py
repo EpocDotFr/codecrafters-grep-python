@@ -1,7 +1,7 @@
 from app.custom_types import Count, CharacterSetMode, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Pattern
 from typing import Tuple, Union, Callable
+from io import BytesIO, SEEK_CUR
 from app.lexer import Lexer
-from io import BytesIO
 import string
 
 METACLASS_DIGITS = string.digits
@@ -90,6 +90,34 @@ class Matcher:
     def __init__(self, pattern: str, subject: str):
         self.pattern = Lexer(pattern).parse()
         self.subject = BytesIO(subject.encode())
+
+    def match_count(self, item: Union[Literal, Digit, Alphanumeric, Wildcard], target: Callable) -> bool:
+        if item.count == Count.One:
+            if not target(self.subject.read(1)):
+                return False
+        elif item.count == Count.OneOrMore:
+            old_pos = self.subject.tell()
+            count = 0
+
+            while True:
+                char = self.subject.read(1)
+
+                if not char or not target(char):
+                    break
+
+                count += 1
+
+            if count < 1:
+                return False
+
+            self.subject.seek(old_pos)
+        elif item.count == Count.ZeroOrOne:
+            char = self.subject.read(1)
+
+            if char and not target(char):
+                return False
+
+        return True
 
     def match(self) -> bool:
         return False
