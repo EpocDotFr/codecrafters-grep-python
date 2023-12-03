@@ -1,4 +1,4 @@
-from app.matcher import Matcher, match_pattern
+from app.matcher import Matcher
 import argparse
 import sys
 
@@ -10,10 +10,9 @@ def main() -> None:
     args, _ = arg_parser.parse_known_args()
     subject = sys.stdin.read()
 
-    matching = match_pattern(args.pattern, subject)
+    matching = Matcher(args.pattern, subject).match()
 
     print('Yep' if matching else 'Nope')
-    print('New', 'Yep' if Matcher(args.pattern, subject).match() else 'Nope')
 
     exit(0 if matching else 1)
 

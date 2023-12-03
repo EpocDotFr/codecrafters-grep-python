@@ -114,7 +114,7 @@ class Lexer:
             values = self.read_until(b']', pattern=pattern)
 
             items.append(
-                CharacterSet(mode=mode, values=values.decode())
+                CharacterSet(mode=mode, values=values)
             )
         elif char == b'.': # Wildcard
             count = self.read_count(pattern)
@@ -124,7 +124,7 @@ class Lexer:
             count = self.read_count(pattern)
 
             items.append(
-                Literal(value=char.decode(), count=count)
+                Literal(value=char, count=count)
             )
 
         return items
@@ -146,7 +146,7 @@ class Lexer:
             elif char == b'(': # Groups
                 content = self.read_until(b')')
 
-                choices = content.decode().split('|')
+                choices = content.split('|')
 
                 if len(choices) > 1: # Alternation
                     items.append(

@@ -1,13 +1,13 @@
 from app.custom_types import Count, CharacterSetMode, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Pattern
 from typing import Tuple, Union, Callable
-from io import BytesIO, SEEK_CUR
 from app.lexer import Lexer
+from io import BytesIO
 import string
 
-METACLASS_DIGITS = string.digits
-METACLASS_UPPER_LOWER_LETTERS = string.ascii_letters
+METACLASS_DIGITS = string.digits.encode()
+METACLASS_UPPER_LOWER_LETTERS = string.ascii_letters.encode()
 METACLASS_DIGITS_UPPER_LOWER_LETTERS = METACLASS_DIGITS + METACLASS_UPPER_LOWER_LETTERS
-WILDCARD_CHARACTERS_EXCLUDE = '[](|)\\'
+WILDCARD_CHARACTERS_EXCLUDE = b'[](|)\\'
 
 
 def _count(subject: str, index: int, item: Union[Literal, Digit, Alphanumeric, Wildcard], target: Callable) -> Tuple[bool, int]:
@@ -91,12 +91,13 @@ class Matcher:
         self.pattern = Lexer(pattern).parse()
         self.subject = BytesIO(subject.encode())
 
+        print(self.pattern)
+
     def match_count(self, item: Union[Literal, Digit, Alphanumeric, Wildcard], target: Callable) -> bool:
         if item.count == Count.One:
             if not target(self.subject.read(1)):
                 return False
         elif item.count == Count.OneOrMore:
-            old_pos = self.subject.tell()
             count = 0
 
             while True:
@@ -109,8 +110,6 @@ class Matcher:
 
             if count < 1:
                 return False
-
-            self.subject.seek(old_pos)
         elif item.count == Count.ZeroOrOne:
             char = self.subject.read(1)
 
@@ -119,8 +118,80 @@ class Matcher:
 
         return True
 
+    def match_item(self, item: Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup]) -> bool:
+        if isinstance(item, Literal):
+            if not self.match_count(item, lambda c: c == item.value):
+                return False
+        elif isinstance(item, Digit):
+            if not self.match_count(item, lambda c: c in METACLASS_DIGITS):
+                return False
+        elif isinstance(item, Alphanumeric):
+            if not self.match_count(item, lambda c: c in METACLASS_DIGITS_UPPER_LOWER_LETTERS + b'_'):
+                return False
+        elif isinstance(item, CharacterSet):
+            char = self.subject.read(1)
+
+            if item.mode == CharacterSetMode.Positive and char not in item.values:
+                return False
+            elif item.mode == CharacterSetMode.Negative and char in item.values:
+                return False
+        elif isinstance(item, Wildcard):
+            if not self.match_count(item, lambda c: c not in WILDCARD_CHARACTERS_EXCLUDE):
+                return False
+        elif isinstance(item, AlternationGroup):
+            old_pos = self.subject.tell()
+            found = False
+
+            for choice in item.choices:
+                found = self.subject.read(len(choice)) == choice
+
+                if found:
+                    break
+
+                self.subject.seek(old_pos)
+
+            if not found:
+                return False
+
+        return True
+
     def match(self) -> bool:
-        return False
+        if not self.pattern.start:
+            first_item = self.pattern.items.pop(0)
+
+            while True:
+                first_match = self.match_item(first_item)
+
+                if first_match:
+                    break
+
+            if not first_match:
+                return False
+
+        last_item = None
+
+        if self.pattern.end:
+            last_item = self.pattern.items.pop(-1)
+
+        for item in self.pattern.items:
+            match = self.match_item(item)
+
+            if not match:
+                return False
+
+        if last_item:
+            # if self.subject.tell() >= len(self.subject):
+            #     return False
+
+            match = self.match_item(last_item)
+
+            if not match:
+                return False
+
+            # if not match or index != len(subject):
+            #     return False
+
+        return True
 
 
 def match_pattern(pattern: str, subject: str) -> bool:
