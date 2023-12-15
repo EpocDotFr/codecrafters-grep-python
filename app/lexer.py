@@ -141,9 +141,11 @@ class Lexer:
 
                     group_items.extend(self.read_items(group_pattern))
 
-                items.append(
-                    Group(items=group_items)
-                )
+                group = Group(items=group_items)
+
+                # self.groups.append(group) TODO
+
+                items.append(group)
         else: # Literal character
             count = self.read_count(pattern)
 

@@ -51,6 +51,7 @@ class Wildcard:
 @dataclass
 class GroupBackreference:
     reference: int
+    matched: bytes = b''
 
 
 @dataclass
@@ -62,6 +63,12 @@ class AlternationGroup:
 @dataclass
 class Group:
     items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, GroupBackreference, AlternationGroup]]
+
+    @property
+    def matched(self) -> bytes:
+        return b''.join([
+            item.matched for item in self.items
+        ])
 
 
 @dataclass
