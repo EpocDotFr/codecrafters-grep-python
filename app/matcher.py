@@ -31,6 +31,8 @@ class Matcher:
                 char = self.subject.read(1)
 
                 if not char or not target(char):
+                    self.subject.seek(-1, SEEK_CUR)
+
                     break
 
                 count += 1
