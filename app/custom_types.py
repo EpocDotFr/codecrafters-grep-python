@@ -1,4 +1,5 @@
-from collections import namedtuple
+from dataclasses import dataclass
+from typing import List, Union
 from enum import Enum
 
 
@@ -12,42 +13,54 @@ class CharacterSetMode(Enum):
     Positive = None
     Negative = b'^'
 
-Pattern = namedtuple('Pattern', [
-    'start',
-    'items',
-    'end'
-])
 
-Literal = namedtuple('Literal', [
-    'value',
-    'count'
-])
+@dataclass
+class HasCountMixin:
+    count: Count
 
-Digit = namedtuple('Digit', [
-    'count'
-])
 
-Alphanumeric = namedtuple('Alphanumeric', [
-    'count'
-])
+@dataclass
+class Literal(HasCountMixin):
+    value: bytes
 
-CharacterSet = namedtuple('CharacterSet', [
-    'mode',
-    'values'
-])
 
-Wildcard = namedtuple('Wildcard', [
-    'count'
-])
+@dataclass
+class Digit(HasCountMixin):
+    pass
 
-Group = namedtuple('Group', [
-    'items'
-])
 
-AlternationGroup = namedtuple('AlternationGroup', [
-    'choices'
-])
+@dataclass
+class Alphanumeric(HasCountMixin):
+    pass
 
-GroupBackreference = namedtuple('GroupBackreference', [
-    'reference'
-])
+
+@dataclass
+class CharacterSet:
+    mode: CharacterSetMode
+    values: bytes
+
+
+@dataclass
+class Wildcard(HasCountMixin):
+    pass
+
+
+@dataclass
+class GroupBackreference:
+    reference: int
+
+@dataclass
+class Group:
+    items: List[Union[Literal, Digit, Alphanumeric, GroupBackreference, CharacterSet, Wildcard]]
+
+
+@dataclass
+class AlternationGroup:
+    choices: List[bytes]
+
+
+@dataclass
+class Pattern:
+    start: bool
+    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, Group, AlternationGroup, GroupBackreference]]
+    end: bool

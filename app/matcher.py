@@ -1,7 +1,7 @@
 from app.custom_types import Count, CharacterSetMode, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Pattern
 from typing import Tuple, Union, Callable
+from io import BytesIO, SEEK_CUR
 from app.lexer import Lexer
-from io import BytesIO
 import string
 
 METACLASS_DIGITS = string.digits.encode()
@@ -168,10 +168,7 @@ class Matcher:
             if not first_match:
                 return False
 
-        last_item = None
-
-        if self.pattern.end:
-            last_item = self.pattern.items.pop(-1)
+        last_item = self.pattern.items.pop(-1) if self.pattern.end else None
 
         for item in self.pattern.items:
             match = self.match_item(item)
@@ -180,16 +177,18 @@ class Matcher:
                 return False
 
         if last_item:
-            # if self.subject.tell() >= len(self.subject):
-            #     return False
+            if not self.subject.read(1): # Subject has been completely read
+                return False
+
+            self.subject.seek(-1, SEEK_CUR)
 
             match = self.match_item(last_item)
 
             if not match:
                 return False
 
-            # if not match or index != len(subject):
-            #     return False
+            if self.subject.read(1): # Matched but subject has not been completely read
+                return False
 
         return True
 

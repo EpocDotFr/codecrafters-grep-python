@@ -8,7 +8,7 @@ import string
 # ^ a \d \w \\ [abc] [^abc] a+ b? . (\w+) (cat|dog) \1 $
 # | | ^^ ^^ ^^ ^^^^^ ^^^^^^  |  | | ^^^^^ ^^^^^^^^^ ^^ |
 # | |  |  |  |   |     |     |  | |   |       |      | ∨
-# | |  |  |  |   |     |     |  | |   |       |      |  End of string anchor
+# | |  |  |  |   |     |     |  | |   |       |      ∨ End of string anchor
 # | |  |  |  |   |     |     |  | |   |       ∨      Group backreference
 # | |  |  |  |   |     |     |  | |   ∨       Alternation group
 # | |  |  |  |   |     |     |  | ∨   Group
@@ -72,7 +72,7 @@ class Lexer:
 
         return value
 
-    def read_items(self, pattern: Optional[BytesIO] = None) -> List[Union[Digit, Alphanumeric, GroupBackreference, Literal, CharacterSet, Wildcard]]:
+    def read_items(self, pattern: Optional[BytesIO] = None) -> List[Union[Literal, Digit, Alphanumeric, GroupBackreference, CharacterSet, Wildcard]]:
         pattern = pattern or self.pattern
 
         items = []
@@ -101,7 +101,7 @@ class Lexer:
                 count = self.read_count(pattern)
 
                 items.append(
-                    Literal(value='\\', count=count)
+                    Literal(value=b'\\', count=count)
                 )
         elif char == b'[': # Positive or negative character set
             try:
@@ -146,7 +146,7 @@ class Lexer:
             elif char == b'(': # Groups
                 content = self.read_until(b')')
 
-                choices = content.split('|')
+                choices = content.split(b'|')
 
                 if len(choices) > 1: # Alternation
                     items.append(
