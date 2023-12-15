@@ -120,6 +120,30 @@ class Lexer:
             count = self.read_count(pattern)
 
             items.append(Wildcard(count=count))
+        elif char == b'(': # Groups
+            content = self.read_until(b')', pattern=pattern)
+
+            if b'|' in content: # Alternation
+                items.append(
+                    AlternationGroup(choices=content.split(b'|'))
+                )
+            else: # Regular group
+                group_items = []
+                group_pattern = BytesIO(content)
+
+                while True:
+                    group_char = group_pattern.read(1)
+
+                    if not group_char:
+                        break
+
+                    group_pattern.seek(-1, SEEK_CUR)
+
+                    group_items.extend(self.read_items(group_pattern))
+
+                items.append(
+                    Group(items=group_items)
+                )
         else: # Literal character
             count = self.read_count(pattern)
 
@@ -143,19 +167,6 @@ class Lexer:
                 start = True
             elif char == b'$': # End of string anchor
                 end = True
-            elif char == b'(': # Groups
-                content = self.read_until(b')')
-
-                choices = content.split(b'|')
-
-                if len(choices) > 1: # Alternation
-                    items.append(
-                        AlternationGroup(choices=choices)
-                    )
-                else: # Regular group
-                    items.append(
-                        Group(items=self.read_items(BytesIO(content)))
-                    )
             else:
                 self.pattern.seek(-1, SEEK_CUR)
 
