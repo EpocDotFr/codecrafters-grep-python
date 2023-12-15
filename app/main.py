@@ -10,7 +10,11 @@ def main() -> None:
     args, _ = arg_parser.parse_known_args()
     subject = sys.stdin.read()
 
-    matching = Matcher(args.pattern, subject).match()
+    matcher = Matcher(args.pattern, subject)
+
+    matching = matcher.match()
+
+    print(matcher.pattern)
 
     print('Yep' if matching else 'Nope')
 

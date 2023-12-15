@@ -1,4 +1,4 @@
-from app.custom_types import Count, CharacterSetMode, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Pattern
+from app.custom_types import Count, CharacterSetMode, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Pattern, Group, GroupBackreference
 from typing import Union, Callable
 from io import BytesIO, SEEK_CUR
 from app.lexer import Lexer
@@ -18,13 +18,16 @@ class Matcher:
         self.pattern = Lexer(pattern).parse()
         self.subject = BytesIO(subject.encode())
 
-        print(self.pattern)
-
     def match_count(self, item: Union[Literal, Digit, Alphanumeric, Wildcard], target: Callable) -> bool:
         if item.count == Count.One:
-            if not target(self.subject.read(1)):
+            char = self.subject.read(1)
+
+            if not target(char):
                 return False
+
+            item.matched = char
         elif item.count == Count.OneOrMore:
+            chars = b''
             count = 0
 
             while True:
@@ -35,19 +38,25 @@ class Matcher:
 
                     break
 
+                chars += char
                 count += 1
 
             if count < 1:
                 return False
+
+            item.matched = chars
         elif item.count == Count.ZeroOrOne:
             char = self.subject.read(1)
 
-            if char and not target(char):
-                self.subject.seek(-1, SEEK_CUR)
+            if char:
+                if not target(char):
+                    self.subject.seek(-1, SEEK_CUR)
+                else:
+                    item.matched = char
 
         return True
 
-    def match_item(self, item: Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup]) -> bool:
+    def match_item(self, item: Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Group, GroupBackreference]) -> bool:
         if isinstance(item, Literal):
             if not self.match_count(item, lambda c: c == item.value):
                 return False
@@ -64,17 +73,22 @@ class Matcher:
                 return False
             elif item.mode == CharacterSetMode.Negative and char in item.values:
                 return False
+
+            item.matched = char
         elif isinstance(item, Wildcard):
             if not self.match_count(item, lambda c: c not in WILDCARD_CHARACTERS_EXCLUDE):
                 return False
         elif isinstance(item, AlternationGroup):
             old_pos = self.subject.tell()
             found = False
+            chars = b''
 
             for choice in item.choices:
-                found = self.subject.read(len(choice)) == choice
+                chars = self.subject.read(len(choice))
 
-                if found:
+                if chars == choice:
+                    found = True
+
                     break
 
                 self.subject.seek(old_pos)
@@ -82,11 +96,19 @@ class Matcher:
             if not found:
                 return False
 
+            item.matched = chars
+        elif isinstance(item, Group):
+            for group_item in item.items:
+                if not self.match_item(group_item):
+                    return False
+        elif isinstance(item, GroupBackreference):
+            pass # TODO
+
         return True
 
     def match(self) -> bool:
         if not self.pattern.start:
-            first_item = self.pattern.items.pop(0)
+            first_item = self.pattern.items[0]
 
             while True:
                 if not self.subject.read(1):  # Subject has been completely read
@@ -102,9 +124,12 @@ class Matcher:
             if not first_match:
                 return False
 
-        last_item = self.pattern.items.pop(-1) if self.pattern.end else None
+        try:
+            last_item = self.pattern.items[-1] if self.pattern.end else None
+        except IndexError:
+            last_item = None
 
-        for item in self.pattern.items:
+        for item in self.pattern.items[slice(None if self.pattern.start else 1, -1 if self.pattern.end and self.pattern.items else None)]:
             match = self.match_item(item)
 
             if not match:

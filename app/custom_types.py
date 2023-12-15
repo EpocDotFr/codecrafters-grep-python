@@ -1,66 +1,71 @@
 from dataclasses import dataclass
 from typing import List, Union
-from enum import Enum
+import enum
 
 
-class Count(Enum):
+@enum.unique
+class Count(enum.Enum):
     One = None
     OneOrMore = b'+'
     ZeroOrOne = b'?'
 
 
-class CharacterSetMode(Enum):
+@enum.unique
+class CharacterSetMode(enum.Enum):
     Positive = None
     Negative = b'^'
 
 
 @dataclass
-class HasCountMixin:
-    count: Count
-
-
-@dataclass
-class Literal(HasCountMixin):
+class Literal:
     value: bytes
+    count: Count
+    matched: bytes = b''
 
 
 @dataclass
-class Digit(HasCountMixin):
-    pass
+class Digit:
+    count: Count
+    matched: bytes = b''
 
 
 @dataclass
-class Alphanumeric(HasCountMixin):
-    pass
+class Alphanumeric:
+    count: Count
+    matched: bytes = b''
 
 
 @dataclass
 class CharacterSet:
     mode: CharacterSetMode
     values: bytes
+    matched: bytes = b''
 
 
 @dataclass
-class Wildcard(HasCountMixin):
-    pass
+class Wildcard:
+    count: Count
+    matched: bytes = b''
 
 
 @dataclass
 class GroupBackreference:
     reference: int
 
-@dataclass
-class Group:
-    items: List[Union[Literal, Digit, Alphanumeric, GroupBackreference, CharacterSet, Wildcard]]
-
 
 @dataclass
 class AlternationGroup:
     choices: List[bytes]
+    matched: bytes = b''
+
+
+@dataclass
+class Group:
+    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, GroupBackreference, AlternationGroup]]
 
 
 @dataclass
 class Pattern:
     start: bool
-    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, Group, AlternationGroup, GroupBackreference]]
+    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, GroupBackreference, Group, AlternationGroup]]
     end: bool
