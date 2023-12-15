@@ -43,7 +43,7 @@ class Matcher:
             char = self.subject.read(1)
 
             if char and not target(char):
-                return False
+                self.subject.seek(-1, SEEK_CUR)
 
         return True
 
