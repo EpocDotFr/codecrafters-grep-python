@@ -1,4 +1,4 @@
-from app.custom_types import Count, CharacterSetMode, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Pattern, Group, GroupBackreference
+from app.custom_types import Count, CharacterSetMode, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Pattern, Group
 from typing import Union, Callable
 from io import BytesIO, SEEK_CUR
 from app.lexer import Lexer
@@ -48,7 +48,7 @@ class Matcher:
 
         return True
 
-    def match_item(self, item: Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Group, GroupBackreference]) -> bool:
+    def match_item(self, item: Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Group]) -> bool:
         if isinstance(item, Literal):
             if not self.match_count(item, lambda c: c == item.value):
                 return False
@@ -84,10 +84,6 @@ class Matcher:
                 return False
         elif isinstance(item, Group):
             for group_item in item.items:
-                if not self.match_item(group_item):
-                    return False
-        elif isinstance(item, GroupBackreference):
-            for group_item in self.pattern.groups[item.reference - 1].items:
                 if not self.match_item(group_item):
                     return False
 

@@ -1,4 +1,4 @@
-from app.custom_types import Count, CharacterSetMode, Pattern, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, GroupBackreference, Group
+from app.custom_types import Count, CharacterSetMode, Pattern, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Group
 from typing import List, Union, Optional
 from io import BytesIO, SEEK_CUR
 import string
@@ -29,12 +29,10 @@ class InvalidPattern(Exception):
 
 class Lexer:
     pattern: BytesIO
-    pattern_parsed: Pattern
+    groups: List[Group] = []
 
     def __init__(self, pattern: str):
         self.pattern = BytesIO(pattern.encode())
-
-        self.pattern_parsed = Pattern()
 
     def read_count(self, pattern: Optional[BytesIO] = None) -> Count:
         pattern = pattern or self.pattern
@@ -75,7 +73,7 @@ class Lexer:
 
         return value
 
-    def read_items(self, pattern: Optional[BytesIO] = None) -> List[Union[Literal, Digit, Alphanumeric, GroupBackreference, CharacterSet, Wildcard]]:
+    def read_items(self, pattern: Optional[BytesIO] = None) -> List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard]]:
         pattern = pattern or self.pattern
 
         items = []
@@ -102,11 +100,9 @@ class Lexer:
                 reference = int(metaclass)
 
                 try:
-                    self.pattern_parsed.groups[reference - 1]
+                    items.append(self.groups[reference - 1])
                 except IndexError:
                     raise InvalidPattern(f'Group #{reference} does not exist') from None
-
-                items.append(GroupBackreference(reference=reference))
             else: # Escaped backslash
                 count = self.read_count(pattern)
 
@@ -155,7 +151,7 @@ class Lexer:
 
                 group = Group(items=group_items)
 
-                self.pattern_parsed.groups.append(group)
+                self.groups.append(group)
 
                 items.append(group)
         else: # Literal character
@@ -168,6 +164,9 @@ class Lexer:
         return items
 
     def parse(self) -> Pattern:
+        start = end = False
+        items = []
+
         while True:
             char = self.pattern.read(1)
 
@@ -175,12 +174,12 @@ class Lexer:
                 break
 
             if char == b'^': # Start of string anchor
-                self.pattern_parsed.start = True
+                start = True
             elif char == b'$': # End of string anchor
-                self.pattern_parsed.end = True
+                end = True
             else:
                 self.pattern.seek(-1, SEEK_CUR)
 
-                self.pattern_parsed.items.extend(self.read_items())
+                items.extend(self.read_items())
 
-        return self.pattern_parsed
+        return Pattern(start=start, items=items, end=end)

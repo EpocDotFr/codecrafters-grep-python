@@ -45,23 +45,17 @@ class Wildcard:
 
 
 @dataclasses.dataclass
-class GroupBackreference:
-    reference: int
-
-
-@dataclasses.dataclass
 class AlternationGroup:
     choices: List[bytes]
 
 
 @dataclasses.dataclass
 class Group:
-    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, GroupBackreference, AlternationGroup]]
+    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup]]
 
 
 @dataclasses.dataclass
 class Pattern:
     start: bool = False
-    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, GroupBackreference, Group, AlternationGroup]] = dataclasses.field(default_factory=list)
+    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, Group, AlternationGroup]] = dataclasses.field(default_factory=list)
     end: bool = False
-    groups: List[Group] = dataclasses.field(default_factory=list)
