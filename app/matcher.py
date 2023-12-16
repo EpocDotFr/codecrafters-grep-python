@@ -26,11 +26,15 @@ class Matcher:
                 return False
         elif item.count == Count.OneOrMore:
             count = 0
+            empty = False
 
             while True:
                 char = self.subject.read(1)
 
                 if not char or not target(char):
+                    if not char:
+                        empty = True
+
                     break
 
                 count += 1
@@ -38,7 +42,8 @@ class Matcher:
             if count < 1:
                 return False
 
-            self.subject.seek(-1, SEEK_CUR)
+            if not empty:
+                self.subject.seek(-1, SEEK_CUR)
         elif item.count == Count.ZeroOrOne:
             char = self.subject.read(1)
 
@@ -107,18 +112,15 @@ class Matcher:
             if not first_match:
                 return False
 
-        try:
-            last_item = self.pattern.items[-1] if self.pattern.end else None
-        except IndexError:
-            last_item = None
-
-        for item in self.pattern.items[slice(None if self.pattern.start else 1, -1 if self.pattern.end and self.pattern.items else None)]:
+        for item in self.pattern.items[slice(1 if not self.pattern.start else None, -1 if self.pattern.end else None)]:
             match = self.match_item(item)
 
             if not match:
                 return False
 
-        if last_item:
+        if self.pattern.end:
+            last_item = self.pattern.items[-1]
+
             if not self.subject.read(1): # Subject has been completely read
                 return False
 
