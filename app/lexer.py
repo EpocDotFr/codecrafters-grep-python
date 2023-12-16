@@ -73,6 +73,21 @@ class Lexer:
 
         return value
 
+    def read_group_items(self, pattern: BytesIO) -> List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Group]]:
+        items = []
+
+        while True:
+            char = pattern.read(1)
+
+            if not char:
+                break
+
+            pattern.seek(-1, SEEK_CUR)
+
+            items.extend(self.read_items(pattern))
+
+        return items
+
     def read_items(self, pattern: Optional[BytesIO] = None) -> List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard]]:
         pattern = pattern or self.pattern
 
@@ -132,24 +147,17 @@ class Lexer:
             content = self.read_until(b')', pattern=pattern)
 
             if b'|' in content: # Alternation
-                alternation_group = AlternationGroup(choices=content.split(b'|'))
+                choices = [
+                    self.read_group_items(BytesIO(choice)) for choice in content.split(b'|')
+                ]
+
+                alternation_group = AlternationGroup(choices=choices)
 
                 self.groups.append(alternation_group)
 
                 items.append(alternation_group)
             else: # Regular group
-                group_items = []
-                group_pattern = BytesIO(content)
-
-                while True:
-                    group_char = group_pattern.read(1)
-
-                    if not group_char:
-                        break
-
-                    group_pattern.seek(-1, SEEK_CUR)
-
-                    group_items.extend(self.read_items(group_pattern))
+                group_items = self.read_group_items(BytesIO(content))
 
                 group = Group(items=group_items)
 

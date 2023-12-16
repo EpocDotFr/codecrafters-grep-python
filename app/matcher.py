@@ -75,15 +75,21 @@ class Matcher:
             old_pos = self.subject.tell()
             found = False
 
-            for choice in item.choices:
-                chars = self.subject.read(len(choice))
+            for choices in item.choices:
+                group_found = True
 
-                if chars == choice:
+                for choice_item in choices:
+                    if not self.match_item(choice_item):
+                        group_found = False
+
+                        break
+
+                if not group_found:
+                    self.subject.seek(old_pos)
+                else:
                     found = True
 
                     break
-
-                self.subject.seek(old_pos)
 
             if not found:
                 return False

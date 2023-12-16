@@ -46,12 +46,12 @@ class Wildcard:
 
 @dataclasses.dataclass
 class AlternationGroup:
-    choices: List[bytes]
+    choices: List[List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard]]] # AlternationGroup and Group as well
 
 
 @dataclasses.dataclass
 class Group:
-    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup]]
+    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup]] # Group as well
 
 
 @dataclasses.dataclass
