@@ -18,7 +18,7 @@ class Matcher:
         self.pattern = Lexer(pattern).parse()
         self.subject = BytesIO(subject.encode())
 
-    def match_count(self, item: Union[Literal, Digit, Alphanumeric, Wildcard], target: Callable) -> bool:
+    def match_count(self, item: Union[Literal, Digit, Alphanumeric, Wildcard, CharacterSet], target: Callable) -> bool:
         if item.count == Count.One:
             char = self.subject.read(1)
 
@@ -61,11 +61,9 @@ class Matcher:
             if not self.match_count(item, lambda c: c in METACLASS_DIGITS_UPPER_LOWER_LETTERS + b'_'):
                 return False
         elif isinstance(item, CharacterSet):
-            char = self.subject.read(1)
-
-            if item.mode == CharacterSetMode.Positive and char not in item.values:
+            if item.mode == CharacterSetMode.Positive and not self.match_count(item, lambda c: c in item.values):
                 return False
-            elif item.mode == CharacterSetMode.Negative and char in item.values:
+            elif item.mode == CharacterSetMode.Negative and not self.match_count(item, lambda c: c not in item.values):
                 return False
         elif isinstance(item, Wildcard):
             if not self.match_count(item, lambda c: c not in WILDCARD_CHARACTERS_EXCLUDE):

@@ -36,6 +36,7 @@ class Alphanumeric:
 class CharacterSet:
     mode: CharacterSetMode
     values: bytes
+    count: Count
 
 
 @dataclasses.dataclass

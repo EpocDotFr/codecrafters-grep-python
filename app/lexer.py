@@ -123,8 +123,10 @@ class Lexer:
 
             values = self.read_until(b']', pattern=pattern)
 
+            count = self.read_count(pattern)
+
             items.append(
-                CharacterSet(mode=mode, values=values)
+                CharacterSet(mode=mode, values=values, count=count)
             )
         elif char == b'.': # Wildcard
             count = self.read_count(pattern)
