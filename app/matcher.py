@@ -32,8 +32,6 @@ class Matcher:
                 char = self.subject.read(1)
 
                 if not char or not target(char):
-                    self.subject.seek(-1, SEEK_CUR)
-
                     break
 
                 chars += char
@@ -71,7 +69,6 @@ class Matcher:
         elif isinstance(item, AlternationGroup):
             old_pos = self.subject.tell()
             found = False
-            chars = b''
 
             for choice in item.choices:
                 chars = self.subject.read(len(choice))
