@@ -22,28 +22,23 @@ class Matcher:
         if item.count == Count.One:
             char = self.subject.read(1)
 
-            if not target(char):
+            if not char or not target(char):
                 return False
         elif item.count == Count.OneOrMore:
-            chars = b''
             count = 0
 
             while True:
                 char = self.subject.read(1)
 
-                if not char:
+                if not char or not target(char):
                     break
 
-                if not target(char):
-                    self.subject.seek(-1, SEEK_CUR)
-
-                    break
-
-                chars += char
                 count += 1
 
             if count < 1:
                 return False
+
+            self.subject.seek(-1, SEEK_CUR)
         elif item.count == Count.ZeroOrOne:
             char = self.subject.read(1)
 
