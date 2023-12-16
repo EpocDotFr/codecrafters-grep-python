@@ -84,12 +84,12 @@ class Matcher:
 
                         break
 
-                if not group_found and i < len(item.choices) - 1:
-                    self.subject.seek(old_pos)
-                else:
+                if group_found:
                     found = True
 
                     break
+                elif i < len(item.choices) - 1:
+                    self.subject.seek(old_pos)
 
             if not found:
                 return False
