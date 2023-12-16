@@ -75,7 +75,7 @@ class Matcher:
             old_pos = self.subject.tell()
             found = False
 
-            for choices in item.choices:
+            for i, choices in enumerate(item.choices):
                 group_found = True
 
                 for choice_item in choices:
@@ -84,7 +84,7 @@ class Matcher:
 
                         break
 
-                if not group_found:
+                if not group_found and i < len(item.choices) - 1:
                     self.subject.seek(old_pos)
                 else:
                     found = True
