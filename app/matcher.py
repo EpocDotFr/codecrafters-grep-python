@@ -31,7 +31,12 @@ class Matcher:
             while True:
                 char = self.subject.read(1)
 
-                if not char or not target(char):
+                if not char:
+                    break
+
+                if not target(char):
+                    self.subject.seek(-1, SEEK_CUR)
+
                     break
 
                 chars += char
