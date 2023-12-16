@@ -29,10 +29,24 @@ class InvalidPattern(Exception):
 
 class Lexer:
     pattern: BytesIO
+    parsed_pattern: Pattern
     groups: List[Union[Group, AlternationGroup]] = []
 
     def __init__(self, pattern: str):
+        start = end = False
+
+        if pattern[0] == '^': # Start of string anchor
+            start = True
+
+            pattern = pattern[1:]
+
+        if pattern[-1] == '$': # End of string anchor
+            end = True
+
+            pattern = pattern[:-1]
+
         self.pattern = BytesIO(pattern.encode())
+        self.parsed_pattern = Pattern(start=start, end=end)
 
     def read_count(self, pattern: Optional[BytesIO] = None) -> Count:
         pattern = pattern or self.pattern
@@ -174,22 +188,14 @@ class Lexer:
         return items
 
     def parse(self) -> Pattern:
-        start = end = False
-        items = []
-
         while True:
             char = self.pattern.read(1)
 
             if not char:
                 break
 
-            if char == b'^': # Start of string anchor
-                start = True
-            elif char == b'$': # End of string anchor
-                end = True
-            else:
-                self.pattern.seek(-1, SEEK_CUR)
+            self.pattern.seek(-1, SEEK_CUR)
 
-                items.extend(self.read_items())
+            self.parsed_pattern.items.extend(self.read_items())
 
-        return Pattern(start=start, items=items, end=end)
+        return self.parsed_pattern
