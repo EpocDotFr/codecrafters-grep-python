@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 from typing import List, Union
+import dataclasses
 import enum
 
 
@@ -16,51 +16,51 @@ class CharacterSetMode(enum.Enum):
     Negative = b'^'
 
 
-@dataclass
+@dataclasses.dataclass
 class Literal:
     value: bytes
     count: Count
     matched: bytes = b''
 
 
-@dataclass
+@dataclasses.dataclass
 class Digit:
     count: Count
     matched: bytes = b''
 
 
-@dataclass
+@dataclasses.dataclass
 class Alphanumeric:
     count: Count
     matched: bytes = b''
 
 
-@dataclass
+@dataclasses.dataclass
 class CharacterSet:
     mode: CharacterSetMode
     values: bytes
     matched: bytes = b''
 
 
-@dataclass
+@dataclasses.dataclass
 class Wildcard:
     count: Count
     matched: bytes = b''
 
 
-@dataclass
+@dataclasses.dataclass
 class GroupBackreference:
     reference: int
     matched: bytes = b''
 
 
-@dataclass
+@dataclasses.dataclass
 class AlternationGroup:
     choices: List[bytes]
     matched: bytes = b''
 
 
-@dataclass
+@dataclasses.dataclass
 class Group:
     items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, GroupBackreference, AlternationGroup]]
 
@@ -71,8 +71,9 @@ class Group:
         ])
 
 
-@dataclass
+@dataclasses.dataclass
 class Pattern:
-    start: bool
-    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, GroupBackreference, Group, AlternationGroup]]
-    end: bool
+    start: bool = False
+    items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, GroupBackreference, Group, AlternationGroup]] = dataclasses.field(default_factory=list)
+    end: bool = False
+    groups: List[Group] = dataclasses.field(default_factory=list)

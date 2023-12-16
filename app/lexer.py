@@ -29,9 +29,12 @@ class InvalidPattern(Exception):
 
 class Lexer:
     pattern: BytesIO
+    pattern_parsed: Pattern
 
     def __init__(self, pattern: str):
         self.pattern = BytesIO(pattern.encode())
+
+        self.pattern_parsed = Pattern()
 
     def read_count(self, pattern: Optional[BytesIO] = None) -> Count:
         pattern = pattern or self.pattern
@@ -96,7 +99,14 @@ class Lexer:
                 elif metaclass == b'w': # Alphanumeric
                     items.append(Alphanumeric(count=count))
             elif metaclass in string.digits.encode(): # Group backreference
-                items.append(GroupBackreference(reference=int(metaclass)))
+                reference = int(metaclass)
+
+                try:
+                    self.pattern_parsed.groups[reference - 1]
+                except IndexError:
+                    raise InvalidPattern(f'Group #{reference} does not exist') from None
+
+                items.append(GroupBackreference(reference=reference))
             else: # Escaped backslash
                 count = self.read_count(pattern)
 
@@ -143,7 +153,7 @@ class Lexer:
 
                 group = Group(items=group_items)
 
-                # self.groups.append(group) TODO
+                self.pattern_parsed.groups.append(group)
 
                 items.append(group)
         else: # Literal character
@@ -156,9 +166,6 @@ class Lexer:
         return items
 
     def parse(self) -> Pattern:
-        start = end = False
-        items = []
-
         while True:
             char = self.pattern.read(1)
 
@@ -166,12 +173,12 @@ class Lexer:
                 break
 
             if char == b'^': # Start of string anchor
-                start = True
+                self.pattern_parsed.start = True
             elif char == b'$': # End of string anchor
-                end = True
+                self.pattern_parsed.end = True
             else:
                 self.pattern.seek(-1, SEEK_CUR)
 
-                items.extend(self.read_items())
+                self.pattern_parsed.items.extend(self.read_items())
 
-        return Pattern(start=start, items=items, end=end)
+        return self.pattern_parsed

@@ -102,7 +102,19 @@ class Matcher:
                 if not self.match_item(group_item):
                     return False
         elif isinstance(item, GroupBackreference):
-            pass # TODO
+            matched = self.pattern.groups[item.reference - 1].matched
+
+            if not matched:
+                return False
+
+            old_pos = self.subject.tell()
+
+            chars = self.subject.read(len(matched))
+
+            if matched != chars:
+                return False
+
+            self.subject.seek(old_pos)
 
         return True
 
