@@ -1,4 +1,4 @@
-from app.custom_types import Count, CharacterSetMode, Pattern, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Group
+from app.custom_types import Count, CharacterSetMode, Pattern, Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Group, GroupBackreference
 from typing import List, Union, Optional
 from io import BytesIO, SEEK_CUR
 import string
@@ -30,7 +30,6 @@ class InvalidPattern(Exception):
 class Lexer:
     pattern: BytesIO
     parsed_pattern: Pattern
-    groups: List[Union[Group, AlternationGroup]] = []
 
     def __init__(self, pattern: str):
         start = end = False
@@ -87,7 +86,7 @@ class Lexer:
 
         return value
 
-    def read_group_items(self, pattern: BytesIO) -> List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Group]]:
+    def read_group_items(self, pattern: BytesIO) -> List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Group, GroupBackreference]]:
         items = []
 
         while True:
@@ -102,7 +101,7 @@ class Lexer:
 
         return items
 
-    def read_items(self, pattern: Optional[BytesIO] = None) -> List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard]]:
+    def read_items(self, pattern: Optional[BytesIO] = None) -> List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, AlternationGroup, Group, GroupBackreference]]:
         pattern = pattern or self.pattern
 
         items = []
@@ -129,9 +128,11 @@ class Lexer:
                 reference = int(metaclass)
 
                 try:
-                    items.append(self.groups[reference - 1])
+                    self.parsed_pattern.groups[reference - 1]
                 except IndexError:
                     raise InvalidPattern(f'Group #{reference} does not exist') from None
+
+                items.append(GroupBackreference(reference=reference))
             else: # Escaped backslash
                 count = self.read_count(pattern)
 
@@ -167,7 +168,7 @@ class Lexer:
 
                 alternation_group = AlternationGroup(choices=choices)
 
-                self.groups.append(alternation_group)
+                self.parsed_pattern.groups.append(alternation_group)
 
                 items.append(alternation_group)
             else: # Regular group
@@ -175,7 +176,7 @@ class Lexer:
 
                 group = Group(items=group_items)
 
-                self.groups.append(group)
+                self.parsed_pattern.groups.append(group)
 
                 items.append(group)
         else: # Literal character
