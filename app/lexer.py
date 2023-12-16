@@ -29,7 +29,7 @@ class InvalidPattern(Exception):
 
 class Lexer:
     pattern: BytesIO
-    groups: List[Group] = []
+    groups: List[Union[Group, AlternationGroup]] = []
 
     def __init__(self, pattern: str):
         self.pattern = BytesIO(pattern.encode())
@@ -132,9 +132,11 @@ class Lexer:
             content = self.read_until(b')', pattern=pattern)
 
             if b'|' in content: # Alternation
-                items.append(
-                    AlternationGroup(choices=content.split(b'|'))
-                )
+                alternation_group = AlternationGroup(choices=content.split(b'|'))
+
+                self.groups.append(alternation_group)
+
+                items.append(alternation_group)
             else: # Regular group
                 group_items = []
                 group_pattern = BytesIO(content)

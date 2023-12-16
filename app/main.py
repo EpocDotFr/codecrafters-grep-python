@@ -12,9 +12,9 @@ def main() -> None:
 
     matcher = Matcher(args.pattern, subject)
 
-    matching = matcher.match()
-
     print(matcher.pattern)
+
+    matching = matcher.match()
 
     print('Yep' if matching else 'Nope')
 
