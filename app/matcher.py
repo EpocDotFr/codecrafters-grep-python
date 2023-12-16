@@ -24,8 +24,6 @@ class Matcher:
 
             if not target(char):
                 return False
-
-            item.matched = char
         elif item.count == Count.OneOrMore:
             chars = b''
             count = 0
@@ -43,16 +41,12 @@ class Matcher:
 
             if count < 1:
                 return False
-
-            item.matched = chars
         elif item.count == Count.ZeroOrOne:
             char = self.subject.read(1)
 
             if char:
                 if not target(char):
                     self.subject.seek(-1, SEEK_CUR)
-                else:
-                    item.matched = char
 
         return True
 
@@ -73,8 +67,6 @@ class Matcher:
                 return False
             elif item.mode == CharacterSetMode.Negative and char in item.values:
                 return False
-
-            item.matched = char
         elif isinstance(item, Wildcard):
             if not self.match_count(item, lambda c: c not in WILDCARD_CHARACTERS_EXCLUDE):
                 return False
@@ -95,26 +87,14 @@ class Matcher:
 
             if not found:
                 return False
-
-            item.matched = chars
         elif isinstance(item, Group):
             for group_item in item.items:
                 if not self.match_item(group_item):
                     return False
         elif isinstance(item, GroupBackreference):
-            matched = self.pattern.groups[item.reference - 1].matched
-
-            if not matched:
-                return False
-
-            old_pos = self.subject.tell()
-
-            chars = self.subject.read(len(matched))
-
-            if matched != chars:
-                return False
-
-            self.subject.seek(old_pos)
+            for group_item in self.pattern.groups[item.reference - 1].items:
+                if not self.match_item(group_item):
+                    return False
 
         return True
 

@@ -20,55 +20,42 @@ class CharacterSetMode(enum.Enum):
 class Literal:
     value: bytes
     count: Count
-    matched: bytes = b''
 
 
 @dataclasses.dataclass
 class Digit:
     count: Count
-    matched: bytes = b''
 
 
 @dataclasses.dataclass
 class Alphanumeric:
     count: Count
-    matched: bytes = b''
 
 
 @dataclasses.dataclass
 class CharacterSet:
     mode: CharacterSetMode
     values: bytes
-    matched: bytes = b''
 
 
 @dataclasses.dataclass
 class Wildcard:
     count: Count
-    matched: bytes = b''
 
 
 @dataclasses.dataclass
 class GroupBackreference:
     reference: int
-    matched: bytes = b''
 
 
 @dataclasses.dataclass
 class AlternationGroup:
     choices: List[bytes]
-    matched: bytes = b''
 
 
 @dataclasses.dataclass
 class Group:
     items: List[Union[Literal, Digit, Alphanumeric, CharacterSet, Wildcard, GroupBackreference, AlternationGroup]]
-
-    @property
-    def matched(self) -> bytes:
-        return b''.join([
-            item.matched for item in self.items
-        ])
 
 
 @dataclasses.dataclass
