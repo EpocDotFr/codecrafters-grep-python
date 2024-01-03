@@ -47,7 +47,7 @@ class Lexer:
         self.pattern = BytesIO(pattern.encode())
         self.parsed_pattern = Pattern(start=start, end=end)
 
-    def read_count(self, pattern: Optional[BytesIO] = None) -> Count:
+    def read_count(self, pattern: BytesIO) -> Count:
         pattern = pattern or self.pattern
 
         char = pattern.read(1)
@@ -62,7 +62,7 @@ class Lexer:
 
             return Count.One
 
-    def read_until(self, stop: bytes, pattern: Optional[BytesIO] = None) -> bytes:
+    def read_until(self, pattern: BytesIO, stop: bytes) -> bytes:
         pattern = pattern or self.pattern
 
         value = b''
@@ -147,7 +147,7 @@ class Lexer:
 
                 mode = CharacterSetMode.Positive
 
-            values = self.read_until(b']', pattern=pattern)
+            values = self.read_until(pattern, b']')
 
             count = self.read_count(pattern)
 
@@ -159,7 +159,7 @@ class Lexer:
 
             items.append(Wildcard(count=count))
         elif char == b'(': # Groups
-            content = self.read_until(b')', pattern=pattern)
+            content = self.read_until(pattern, b')')
 
             if b'|' in content: # Alternation
                 choices = [
